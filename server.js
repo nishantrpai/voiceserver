@@ -16,17 +16,14 @@ const rooms = {};
 
 io.on("connection", (socket) => {
   socket.on("isSpeaking", ({roomId, username}) => {
-    console.log("isSpeaking", roomId, username);
     // emit to all clients in the room
     if (!rooms[roomId]) {
-      console.log('no room');
       return;
     }
     if (!rooms[roomId][username]) {
       return;
     }
     rooms[roomId][username].isSpeaking = true;
-    console.log('sending getMembers');
     io.to(roomId).emit("getMembers", rooms[roomId]);
   });
 
@@ -50,7 +47,6 @@ io.on("connection", (socket) => {
     rooms[roomId][username] = {isSpeaking: false};
     // emit to all clients in the room
     io.to(roomId).emit("joinedRoom", username);
-    console.log(`${username} joined room ${JSON.stringify(roomId)}`);
   });
 
   socket.on("getMembers", (roomId) => {
@@ -59,8 +55,6 @@ io.on("connection", (socket) => {
 
   socket.on("audio", ({roomId, username, audio}) => {
     // emit to all clients in the room
-    console.log(roomId, username, audio.length);
-    console.log('send audio', audio.length);
     io.to(roomId).emit("audio", {username, audio, roomId});
   });
 
@@ -68,6 +62,15 @@ io.on("connection", (socket) => {
     // delete the user from the room
     delete rooms[roomId][username];
     io.to(roomId).emit("getMembers", rooms[roomId]);
+  });
+
+  socket.on("fetchRooms", () => {
+    // fetch all rooms and number of members in each
+    let rooms = [];
+    for (let room in rooms) {
+      rooms.push({room, members: rooms[room].length});
+    }
+    io.to(socket.id).emit("rooms", rooms);
   });
 
 });
