@@ -61,6 +61,10 @@ io.on("connection", (socket) => {
   socket.on("leftRoom", ({roomId, username}) => {
     // delete the user from the room
     delete rooms[roomId][username];
+    // if the room is empty, delete the room
+    if (Object.keys(rooms[roomId]).length === 0) {
+      delete rooms[roomId];
+    }
     io.to(roomId).emit("getMembers", rooms[roomId]);
   });
 
