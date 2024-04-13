@@ -60,6 +60,12 @@ io.on("connection", (socket) => {
 
   socket.on("leftRoom", ({roomId, username}) => {
     // delete the user from the room
+    if (!rooms[roomId]) {
+      return;
+    }
+    if (!rooms[roomId][username]) {
+      return;
+    }
     delete rooms[roomId][username];
     // if the room is empty, delete the room
     if (Object.keys(rooms[roomId]).length === 0) {
@@ -70,11 +76,11 @@ io.on("connection", (socket) => {
 
   socket.on("fetchRooms", () => {
     // fetch all rooms and number of members in each
-    let rooms = [];
-    for (let room in rooms) {
-      rooms.push({room, members: rooms[room].length});
-    }
-    io.to(socket.id).emit("rooms", rooms);
+    let allrooms = Object.keys(rooms);
+    let spaces = allrooms.map((room) => {
+      return {room: room, members: Object.keys(rooms[room]).length};
+    });
+    io.to(socket.id).emit("rooms", spaces);
   });
 
 });
