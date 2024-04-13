@@ -33,6 +33,10 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("getStrokens", strokes[roomId]);
   });
 
+  socket.on("getNoRooms", () => {
+    io.emit("getNoRooms", Object.keys(strokes).length);
+  });
+
   socket.on("drawing", ({ roomId, data }) => {
     if (!strokes[roomId]) {
       strokes[roomId] = [];
