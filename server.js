@@ -64,9 +64,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("leftRoom", ({roomId, username}) => {
-    const index = rooms[roomId].findIndex((member) => member.username === username);
-    rooms[roomId].splice(index, 1);
-    io.to(roomId).emit("leftRoom", username);
+    // delete the user from the room
+    delete rooms[roomId][username];
+    io.to(roomId).emit("getMembers", rooms[roomId]);
   });
 
 });
