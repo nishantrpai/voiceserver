@@ -59,6 +59,7 @@ io.on("connection", (socket) => {
 
   socket.on("audio", ({roomId, username, audio}) => {
     // emit to all clients in the room
+    console.log(roomId, username, audio.length);
     console.log('send audio', audio.length);
     io.to(roomId).emit("audio", {username, audio});
   });
