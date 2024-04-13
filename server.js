@@ -1,10 +1,10 @@
+// a socket server for emitting and receiving voices 
+
 const { Server } = require("socket.io");
 const http = require("http");
 
 const httpServer = http.createServer();
-let strokes = {
-  
-}
+
 const io = new Server(httpServer, {
   // your options here
   cors: {
@@ -12,42 +12,61 @@ const io = new Server(httpServer, {
   },
 });
 
+const rooms = {};
+
 io.on("connection", (socket) => {
-  console.log(`New connection: ${socket.id}`);
+  socket.on("isSpeaking", ({roomId, username}) => {
+    console.log("isSpeaking", roomId, username);
+    // emit to all clients in the room
+    if (!rooms[roomId]) {
+      console.log('no room');
+      return;
+    }
+    if (!rooms[roomId][username]) {
+      return;
+    }
+    rooms[roomId][username].isSpeaking = true;
+    console.log('sending getMembers');
+    io.to(roomId).emit("getMembers", rooms[roomId]);
+  });
 
-  // join a specific room
-  socket.on("joinRoom", (roomId) => {
+  socket.on("notSpeaking", ({roomId, username}) => {
+    // emit to all clients in the room
+    if (!rooms[roomId]) {
+      return;
+    }
+    if (!rooms[roomId][username]) {
+      return;
+    }
+    rooms[roomId][username].isSpeaking = false;
+    io.to(roomId).emit("getMembers", rooms[roomId]);
+  });
+
+  socket.on("joinRoom", ({roomId, username}) => {
     socket.join(roomId);
-    if (!strokes[roomId]) {
-      strokes[roomId] = [];
+    if (!rooms[roomId]) {
+      rooms[roomId] = {};
     }
-    console.log(`Socket ${socket.id} joined room ${roomId}`);
+    rooms[roomId][username] = {isSpeaking: false};
+    // emit to all clients in the room
+    io.to(roomId).emit("joinedRoom", username);
+    console.log(`${username} joined room ${JSON.stringify(roomId)}`);
   });
 
-  // forwarding messages to a room
-  socket.on("sendMessage", ({ roomId, message }) => {
-    io.to(roomId).emit("newMessage", message);
+  socket.on("getMembers", (roomId) => {
+    io.to(roomId).emit("getMembers", rooms[roomId]);
   });
 
-  socket.on("getStrokes", (roomId) => {
-    io.to(roomId).emit("getStrokens", strokes[roomId]);
+  socket.on("audio", ({roomId, username, audio}) => {
+    // emit to all clients in the room
+    console.log('send audio');
+    io.to(roomId).emit("audio", {username, audio});
   });
 
-  socket.on("getNoRooms", () => {
-    io.emit("getNoRooms", Object.keys(strokes).length);
-  });
-
-  socket.on("drawing", ({ roomId, data }) => {
-    if (!strokes[roomId]) {
-      strokes[roomId] = [];
-    }
-    strokes[roomId].push(data);
-    io.to(roomId).emit("drawing", strokes[roomId]);
-  });
-
-  socket.on('resetCanvas', (roomId) => {
-    console.log('resetCanvas', roomId);
-    io.to(roomId).emit('drawing', strokes);
+  socket.on("leftRoom", ({roomId, username}) => {
+    const index = rooms[roomId].findIndex((member) => member.username === username);
+    rooms[roomId].splice(index, 1);
+    io.to(roomId).emit("leftRoom", username);
   });
 
 });
