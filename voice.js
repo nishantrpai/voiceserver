@@ -57,6 +57,12 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("getMembers", rooms[roomId]);
   });
 
+  socket.on("audio", ({roomId, username, audio}) => {
+    // emit to all clients in the room
+    console.log('send audio');
+    io.to(roomId).emit("audio", {username, audio});
+  });
+
   socket.on("leftRoom", ({roomId, username}) => {
     const index = rooms[roomId].findIndex((member) => member.username === username);
     rooms[roomId].splice(index, 1);
